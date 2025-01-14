@@ -19,6 +19,16 @@
     </noscript>
 
     <div id="app"></div>
-    <script src="dist/umd/vue.js"></script>
+    <script src="../dist/umd/vue.js"></script>
+    <script>
+      let vm = new Vue({
+        el: '#app',
+        data() {
+          return {
+            message: 'Hello, Vue.js!',
+          }
+        },
+      })
+    </script>
   </body>
 </html>
