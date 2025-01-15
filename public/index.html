@@ -26,9 +26,20 @@
         data() {
           return {
             message: 'Hello, Vue.js!',
+            address: {
+              area: '北京',
+              street: '昌平区',
+              number: '123456',
+              detail: '西三旗',
+              zipCode: '100000',
+              contact: {
+                phone: '17787878787',
+              },
+            },
           }
         },
       })
+      console.log(vm._data)
     </script>
   </body>
 </html>
