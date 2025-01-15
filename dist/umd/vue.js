@@ -45,17 +45,72 @@
   function isObject(obj) {
     return _typeof(obj) === 'object' && obj !== null;
   }
+  function def(data, key, value) {
+    Object.defineProperty(data, key, {
+      enumerable: false,
+      // 不可遍历
+      configurable: false,
+      value: value
+    });
+  }
+
+  // 重写数组的方法 push、pop、shift、unshift、sort、splice、reverse(这些方法回改变原数组所以需要重写)，slice这个方法不会改变原数组所以不需要重写
+  var oldArrayMethods = Array.prototype;
+  console.log(43434, oldArrayMethods);
+  var arrayMethods = Object.create(oldArrayMethods);
+  var methods = ['push', 'pop', 'shift', 'unshift', 'sort', 'splice', 'reverse'];
+  methods.forEach(function (method) {
+    arrayMethods[method] = function () {
+      console.log('用户操作了', method);
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+      var result = oldArrayMethods[method].apply(this, args); // 这里得把args传过去才行
+      // push unshift方法插入的值可能是对象需要观测
+      var insert;
+      var ob = this.__ob__;
+      switch (method) {
+        case 'push':
+        case 'unshift':
+          insert = args;
+          break;
+        case 'splice':
+          insert = args.slice(2);
+      }
+      if (insert) {
+        ob.observerArray(insert);
+      }
+      return result;
+    };
+  });
 
   var Observer = /*#__PURE__*/function () {
     function Observer(value) {
       _classCallCheck(this, Observer);
-      this.walk(value);
+      value.__ob__ = this;
+      def(value, '__ob__', this);
+      if (Array.isArray(value)) {
+        // 数组不会对索引进行监控，性能差，前端开发中通过索引去操作也很少，一般用的push、 pop等方法
+        // 重写数组方法
+        value.__proto__ = arrayMethods;
+        // 对数组的对象去监控
+        this.observerArray(value);
+      } else {
+        this.walk(value);
+      }
     }
     return _createClass(Observer, [{
       key: "walk",
       value: function walk(data) {
         Object.keys(data).forEach(function (key) {
           defineReactive(data, key, data[key]);
+        });
+      }
+    }, {
+      key: "observerArray",
+      value: function observerArray(data) {
+        data.forEach(function (item) {
+          observer(item);
         });
       }
     }]);
