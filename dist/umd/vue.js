@@ -56,7 +56,6 @@
 
   // 重写数组的方法 push、pop、shift、unshift、sort、splice、reverse(这些方法回改变原数组所以需要重写)，slice这个方法不会改变原数组所以不需要重写
   var oldArrayMethods = Array.prototype;
-  console.log(43434, oldArrayMethods);
   var arrayMethods = Object.create(oldArrayMethods);
   var methods = ['push', 'pop', 'shift', 'unshift', 'sort', 'splice', 'reverse'];
   methods.forEach(function (method) {
@@ -152,9 +151,12 @@
     var data = vm.$options.data;
     data = vm._data = typeof data === 'function' ? data.call(vm) : data;
     // 对象劫持
-    console.log(data);
     // Object.defineProperty,给书香增加get、set 方法
     observer(data); // 响应式原理
+  }
+
+  function compileToRender() {
+    return function render() {};
   }
 
   function initMixin(Vue) {
@@ -163,6 +165,23 @@
       vm.$options = options || {};
       // 初始化状态
       initState(vm);
+      if (vm.$options.el) {
+        vm.$mount(vm.$options.el);
+      }
+    };
+    Vue.prototype.$mount = function (el) {
+      var vm = this;
+      var options = vm.$options;
+      vm.$el = document.querySelector(el);
+      var render = options.render;
+      if (!render) {
+        var template = vm.template;
+        if (!template && vm.$el) {
+          template = vm.$el.outerHTML;
+          var _render = compileToRender();
+          options.render = _render;
+        }
+      }
     };
   }
 

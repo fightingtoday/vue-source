@@ -1,6 +1,5 @@
 // 重写数组的方法 push、pop、shift、unshift、sort、splice、reverse(这些方法回改变原数组所以需要重写)，slice这个方法不会改变原数组所以不需要重写
 let oldArrayMethods = Array.prototype
-console.log(43434, oldArrayMethods)
 export const arrayMethods = Object.create(oldArrayMethods)
 
 const methods = ['push', 'pop', 'shift', 'unshift', 'sort', 'splice', 'reverse']

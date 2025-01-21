@@ -18,11 +18,14 @@
       >
     </noscript>
 
-    <div id="app"></div>
+    <div class="app">
+      <p>1234</p>
+      <p>{{ message }}</p>
+    </div>
     <script src="../dist/umd/vue.js"></script>
     <script>
       let vm = new Vue({
-        el: '#app',
+        el: '.app',
         data() {
           return {
             message: 'Hello, Vue.js!',
@@ -41,7 +44,6 @@
         },
       })
       vm._data.arr.push({ same: false })
-      console.log(vm._data.arr)
     </script>
   </body>
 </html>

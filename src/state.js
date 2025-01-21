@@ -25,7 +25,6 @@ function initData(vm) {
   let data = vm.$options.data
   data = vm._data = typeof data === 'function' ? data.call(vm) : data
   // 对象劫持
-  console.log(data)
   // Object.defineProperty,给书香增加get、set 方法
   observer(data) // 响应式原理
 }
