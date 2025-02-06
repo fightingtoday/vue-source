@@ -306,6 +306,8 @@
     return root;
   }
 
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // 匹配{{}}
+
   function compileToRender(template) {
     function genProps(attrs) {
       // 处理属性 拼接成属性字符串
@@ -330,16 +332,53 @@
       }
       return "{".concat(str.slice(0, -1), "}");
     }
+    function genChildren(el) {
+      var children = el.children;
+      if (children && children.length > 0) {
+        return "".concat(children.map(function (c) {
+          return gen(c);
+        }).join(','));
+      } else {
+        return false;
+      }
+    }
+    function gen(node) {
+      if (node.type === 1) {
+        return generate(node);
+      } else {
+        var text = node.text;
+        var token = [];
+        var match;
+        var lastIndex = 0;
+        defaultTagRE.lastIndex = 0;
+        while (match = defaultTagRE.exec(text)) {
+          var _index = match.index;
+          if (_index > lastIndex) {
+            token.push(JSON.stringify(text.slice(lastIndex, _index)));
+          }
+          var value = match[1].trim();
+          token.push("_s(".concat(value, ")"));
+          lastIndex = match.index + match[0].length;
+        }
+        return "_v(".concat(token.join('+'), ")");
+      }
+    }
     function generate(el) {
-      var code = "_c(\"".concat(el.tag, "\", ").concat(el.attrs.length ? genProps(el.attrs) : 'undefined', ")");
+      var children = genChildren(el);
+      var code = "_c(\"".concat(el.tag, "\", ").concat(el.attrs.length ? genProps(el.attrs) : 'undefined').concat(children ? ",".concat(children) : '', ")");
       return code;
     }
     // 解析html字符串，将html字符串变成ast语法树
     var root = parseHtml(template);
     console.log('root', root);
+    // 将ast 语法树转成js语法
+    // _c("div", {class: "app testcss tttccc",style: {"color":"red"," font-size":"16px"}},_c("p", undefined,_v()),_c("span", undefined,_v("hello"+_s(message))))
     var code = generate(root);
     console.log(code);
-    return function render() {};
+    // 所有模版引擎的实现 都需要new Function + with with可改变当前取值的作用域
+    var renderFn = new Function("with(this){return ".concat(code, "}"));
+    console.log('renderFn', renderFn);
+    return renderFn;
   }
 
   function initMixin(Vue) {
