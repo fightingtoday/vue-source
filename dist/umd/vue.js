@@ -164,14 +164,47 @@
   var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则，捕获的内容是标签名
   var startTagClose = /^\s*(\/?)>/; // 捕获的内容是结尾标签
   var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>"));
+  var root = null; //ast语法树树根
+  var currentParent = null; // 当前父节点
+  var stack = []; // 栈存放dom 标签结构，判断标签是否正确闭合
+  var ELEMENT_TYPE = 1;
+  var TEXT_TYPE = 3;
+  function createASTElement(tagName, attrs) {
+    return {
+      type: ELEMENT_TYPE,
+      tag: tagName,
+      attrs: attrs,
+      children: [],
+      parent: null
+    };
+  }
   function start(tagName, attrs) {
     console.log('开始标签：', tagName, '属性是：', attrs);
+    var element = createASTElement(tagName, attrs);
+    if (!root) {
+      root = element;
+    }
+    currentParent = element;
+    stack.push(element); // 标签入栈
   }
   function chars(text) {
     console.log('文本是：', text);
+    text = text.replace(/\s/g, '');
+    if (text) {
+      currentParent.children.push({
+        text: text,
+        type: TEXT_TYPE
+      });
+    }
   }
   function end(tagName) {
     console.log('结束标签：', tagName);
+    var element = stack.pop();
+    currentParent = stack.length > 0 ? stack[stack.length - 1] : null;
+    if (currentParent) {
+      element.parent = currentParent;
+      currentParent.children.push(element); //实现了树的父子关系
+    }
   }
   function parseHtml(html) {
     while (html) {
@@ -225,10 +258,13 @@
         }
       }
     }
+    return root;
   }
+
   function compileToRender(template) {
-    parseHtml(template);
-    console.log('compileToRender');
+    // 解析html字符串，将html字符串变成ast语法树
+    var root = parseHtml(template);
+    console.log('root', root);
     return function render() {};
   }
 
