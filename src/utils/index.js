@@ -9,3 +9,14 @@ export function def(data, key, value) {
     value: value,
   })
 }
+// 取值时实现代理效果
+export function proxy(target, sourceKey, key) {
+  Object.defineProperty(target, key, {
+    get() {
+      return target[sourceKey][key]
+    },
+    set(newValue) {
+      target[sourceKey][key] = newValue
+    },
+  })
+}

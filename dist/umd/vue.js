@@ -98,6 +98,17 @@
       value: value
     });
   }
+  // 取值时实现代理效果
+  function proxy(target, sourceKey, key) {
+    Object.defineProperty(target, key, {
+      get: function get() {
+        return target[sourceKey][key];
+      },
+      set: function set(newValue) {
+        target[sourceKey][key] = newValue;
+      }
+    });
+  }
 
   // 重写数组的方法 push、pop、shift、unshift、sort、splice、reverse(这些方法回改变原数组所以需要重写)，slice这个方法不会改变原数组所以不需要重写
   var oldArrayMethods = Array.prototype;
@@ -195,6 +206,10 @@
     console.log('初始化数据', vm);
     var data = vm.$options.data;
     data = vm._data = typeof data === 'function' ? data.call(vm) : data;
+    // 代理 将vm.xxx 代理到vm._data.xxx(方便用户取值)
+    for (var key in data) {
+      proxy(vm, '_data', key);
+    }
     // 对象劫持
     // Object.defineProperty,给书香增加get、set 方法
     observer(data); // 响应式原理
@@ -377,6 +392,7 @@
     console.log(code);
     // 所有模版引擎的实现 都需要new Function + with with可改变当前取值的作用域
     var renderFn = new Function("with(this){return ".concat(code, "}"));
+    // vue 的render 返回的事虚拟dom
     console.log('renderFn', renderFn);
     return renderFn;
   }

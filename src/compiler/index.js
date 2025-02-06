@@ -65,6 +65,7 @@ export function compileToRender(template) {
   console.log(code)
   // 所有模版引擎的实现 都需要new Function + with with可改变当前取值的作用域
   let renderFn = new Function(`with(this){return ${code}}`)
+  // vue 的render 返回的事虚拟dom
   console.log('renderFn', renderFn)
   return renderFn
 }
