@@ -19,7 +19,7 @@ export function initMixin(Vue) {
       let template = vm.template
       if (!template && vm.$el) {
         template = vm.$el.outerHTML
-        const render = compileToRender()
+        const render = compileToRender(template)
         options.render = render
       }
     } else {

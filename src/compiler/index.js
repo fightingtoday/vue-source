@@ -17,6 +17,74 @@ const doctype = /^<!DOCTYPE [^>]+>/i
 // #7298: escape - to avoid being passed as HTML comment when inlined in page
 const comment = /^<!\--/
 const conditionalComment = /^<!\[/
-export function compileToRender() {
+function start(tagName, attrs) {
+  console.log('开始标签：', tagName, '属性是：', attrs)
+}
+function chars(text) {
+  console.log('文本是：', text)
+}
+function end(tagName) {
+  console.log('结束标签：', tagName)
+}
+function parseHtml(html) {
+  while (html) {
+    let textEnd = html.indexOf('<')
+    if (textEnd === 0) {
+      let startTagMatch = parseStartTag()
+      if (startTagMatch) {
+        start(startTagMatch.tagName, startTagMatch.attrs)
+        continue
+      }
+
+      let endTagMatch = html.match(endTag)
+      console.log('endTagMatch', endTagMatch)
+      if (endTagMatch) {
+        advance(endTagMatch[0].length)
+        end(endTagMatch[1])
+        continue
+      }
+    }
+    let text
+    if (textEnd > 0) {
+      text = html.substring(0, textEnd)
+    }
+    if (text) {
+      advance(text.length)
+      chars(text)
+    }
+  }
+  function advance(n) {
+    html = html.substring(n)
+  }
+  function parseStartTag() {
+    let start = html.match(startTagOpen)
+    if (start) {
+      const match = {
+        tagName: start[1],
+        attrs: [],
+      }
+      advance(start[0].length)
+      let end, attr
+      while (
+        !(end = html.match(startTagClose)) &&
+        (attr = html.match(attribute))
+      ) {
+        advance(attr[0].length) // 去掉属性
+        match.attrs.push({
+          name: attr[1],
+          value: attr[3] || attr[4] || attr[5],
+        })
+      }
+      if (end) {
+        // 去掉开始标签的 >
+        advance(end[0].length)
+        return match
+      }
+    }
+  }
+}
+export function compileToRender(template) {
+  let root = parseHtml(template)
+  console.log('compileToRender')
   return function render() {}
 }
