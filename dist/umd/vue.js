@@ -22,7 +22,7 @@
     }
   }
   function _createClass(e, r, t) {
-    return _defineProperties(e.prototype, r), Object.defineProperty(e, "prototype", {
+    return r && _defineProperties(e.prototype, r), Object.defineProperty(e, "prototype", {
       writable: false
     }), e;
   }
@@ -397,6 +397,27 @@
     return renderFn;
   }
 
+  var Watcher = /*#__PURE__*/_createClass(function Watcher() {
+    _classCallCheck(this, Watcher);
+  });
+
+  function lifecycleMixin(Vue) {
+    // 通过虚拟dom创建真实dom
+    Vue.prototype._update = function (el) {};
+  }
+  function mountComponent(vm, el) {
+    vm.$options;
+
+    // 渲染页面
+    // 无论渲染还是更新都会调用此方法
+    var updateComponent = function updateComponent() {
+      // 返回的是虚拟dom
+      vm._update(vm._render());
+    };
+    // 渲染watcher 每个组件都有一个watcher
+    new Watcher(vm, updateComponent, function () {}, true); // true表示他是一个渲染watcher
+  }
+
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
@@ -420,13 +441,20 @@
           options.render = _render;
         }
       }
+      mountComponent(vm);
     };
+  }
+
+  function renderMixin(Vue) {
+    Vue.prototype._render = function (el) {};
   }
 
   function Vue(options) {
     this._init(options);
   }
   initMixin(Vue);
+  renderMixin(Vue);
+  lifecycleMixin(Vue);
 
   return Vue;
 
