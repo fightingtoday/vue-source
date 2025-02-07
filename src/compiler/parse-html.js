@@ -34,7 +34,7 @@ function createASTElement(tagName, attrs) {
   }
 }
 function start(tagName, attrs) {
-  console.log('开始标签：', tagName, '属性是：', attrs)
+//   console.log('开始标签：', tagName, '属性是：', attrs)
   let element = createASTElement(tagName, attrs)
   if (!root) {
     root = element
@@ -43,7 +43,7 @@ function start(tagName, attrs) {
   stack.push(element) // 标签入栈
 }
 function chars(text) {
-  console.log('文本是：', text)
+//   console.log('文本是：', text)
   text = text.replace(/\s/g, '')
   if (text) {
     currentParent.children.push({
@@ -53,7 +53,7 @@ function chars(text) {
   }
 }
 function end(tagName) {
-  console.log('结束标签：', tagName)
+//   console.log('结束标签：', tagName)
   let element = stack.pop()
   currentParent = stack.length > 0 ? stack[stack.length - 1] : null
   if (currentParent) {
@@ -72,7 +72,7 @@ export function parseHtml(html) {
       }
 
       let endTagMatch = html.match(endTag)
-      console.log('endTagMatch', endTagMatch)
+    //   console.log('endTagMatch', endTagMatch)
       if (endTagMatch) {
         advance(endTagMatch[0].length)
         end(endTagMatch[1])

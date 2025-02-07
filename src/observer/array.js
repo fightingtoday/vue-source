@@ -5,7 +5,7 @@ export const arrayMethods = Object.create(oldArrayMethods)
 const methods = ['push', 'pop', 'shift', 'unshift', 'sort', 'splice', 'reverse']
 methods.forEach(function (method) {
   arrayMethods[method] = function (...args) {
-    console.log('用户操作了', method)
+    // console.log('用户操作了', method)
     const result = oldArrayMethods[method].apply(this, args) // 这里得把args传过去才行
     // push unshift方法插入的值可能是对象需要观测
     let insert

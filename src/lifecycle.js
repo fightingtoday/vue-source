@@ -1,7 +1,13 @@
 import Watcher from './observer/watcher'
+import { patch } from './vdom/patch.js'
 export function lifecycleMixin(Vue) {
   // 通过虚拟dom创建真实dom
-  Vue.prototype._update = function (el) {}
+  Vue.prototype._update = function (vnode) {
+    // 通过虚拟节点创建真实dom
+    const vm = this
+    vm.$el = patch(vm.$el, vnode)
+    console.log('vnode', vnode)
+  }
 }
 export function mountComponent(vm, el) {
   const options = vm.$options
@@ -9,7 +15,6 @@ export function mountComponent(vm, el) {
   // 渲染页面
   // 无论渲染还是更新都会调用此方法
   let updateComponent = () => {
-    // 返回的是虚拟dom
     vm._update(vm._render())
   }
   // 渲染watcher 每个组件都有一个watcher
