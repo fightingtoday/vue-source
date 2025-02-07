@@ -224,49 +224,49 @@
   var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则，捕获的内容是标签名
   var startTagClose = /^\s*(\/?)>/; // 捕获的内容是结尾标签
   var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>"));
-  var root = null; //ast语法树树根
-  var currentParent = null; // 当前父节点
-  var stack = []; // 栈存放dom 标签结构，判断标签是否正确闭合
-  var ELEMENT_TYPE = 1;
-  var TEXT_TYPE = 3;
-  function createASTElement(tagName, attrs) {
-    return {
-      type: ELEMENT_TYPE,
-      tag: tagName,
-      attrs: attrs,
-      children: [],
-      parent: null
-    };
-  }
-  function start(tagName, attrs) {
-    //   console.log('开始标签：', tagName, '属性是：', attrs)
-    var element = createASTElement(tagName, attrs);
-    if (!root) {
-      root = element;
-    }
-    currentParent = element;
-    stack.push(element); // 标签入栈
-  }
-  function chars(text) {
-    //   console.log('文本是：', text)
-    text = text.replace(/\s/g, '');
-    if (text) {
-      currentParent.children.push({
-        text: text,
-        type: TEXT_TYPE
-      });
-    }
-  }
-  function end(tagName) {
-    //   console.log('结束标签：', tagName)
-    var element = stack.pop();
-    currentParent = stack.length > 0 ? stack[stack.length - 1] : null;
-    if (currentParent) {
-      element.parent = currentParent;
-      currentParent.children.push(element); //实现了树的父子关系
-    }
-  }
   function parseHtml(html) {
+    var root = null; //ast语法树树根
+    var currentParent = null; // 当前父节点
+    var stack = []; // 栈存放dom 标签结构，判断标签是否正确闭合
+    var ELEMENT_TYPE = 1;
+    var TEXT_TYPE = 3;
+    function createASTElement(tagName, attrs) {
+      return {
+        type: ELEMENT_TYPE,
+        tag: tagName,
+        attrs: attrs,
+        children: [],
+        parent: null
+      };
+    }
+    function start(tagName, attrs) {
+      //   console.log('开始标签：', tagName, '属性是：', attrs)
+      var element = createASTElement(tagName, attrs);
+      if (!root) {
+        root = element;
+      }
+      currentParent = element;
+      stack.push(element); // 标签入栈
+    }
+    function chars(text) {
+      //   console.log('文本是：', text)
+      text = text.replace(/\s/g, '');
+      if (text) {
+        currentParent.children.push({
+          text: text,
+          type: TEXT_TYPE
+        });
+      }
+    }
+    function end(tagName) {
+      //   console.log('结束标签：', tagName)
+      var element = stack.pop();
+      currentParent = stack.length > 0 ? stack[stack.length - 1] : null;
+      if (currentParent) {
+        element.parent = currentParent;
+        currentParent.children.push(element); //实现了树的父子关系
+      }
+    }
     while (html) {
       var textEnd = html.indexOf('<');
       if (textEnd === 0) {
@@ -322,70 +322,70 @@
   }
 
   var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // 匹配{{}}
+  function genProps(attrs) {
+    // 处理属性 拼接成属性字符串
+    var str = '';
+    var _loop = function _loop() {
+      var attr = attrs[i];
+      if (attr.name === 'style') {
+        var obj = {};
+        attr.value.split(';').forEach(function (item) {
+          var _item$split = item.split(':'),
+            _item$split2 = _slicedToArray(_item$split, 2),
+            key = _item$split2[0],
+            value = _item$split2[1];
+          obj[key] = value.trim();
+        });
+        attr.value = obj;
+      }
+      str += "".concat(attr.name, ": ").concat(JSON.stringify(attr.value), ",");
+    };
+    for (var i = 0; i < attrs.length; i++) {
+      _loop();
+    }
+    return "{".concat(str.slice(0, -1), "}");
+  }
+  function genChildren(el) {
+    var children = el.children;
+    if (children && children.length > 0) {
+      return "".concat(children.map(function (c) {
+        return gen(c);
+      }).join(','));
+    } else {
+      return false;
+    }
+  }
+  function gen(node) {
+    if (node.type === 1) {
+      return generate(node);
+    } else {
+      var text = node.text;
+      var token = [];
+      var match;
+      var lastIndex = 0;
+      defaultTagRE.lastIndex = 0;
+      while (match = defaultTagRE.exec(text)) {
+        var _index = match.index;
+        if (_index > lastIndex) {
+          token.push(JSON.stringify(text.slice(lastIndex, _index)));
+        }
+        var value = match[1].trim();
+        token.push("_s(".concat(value, ")"));
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < text.length) {
+        token.push(JSON.stringify(text.slice(lastIndex)));
+      }
+      return "_v(".concat(token.join('+'), ")");
+    }
+  }
+  function generate(el) {
+    var children = genChildren(el);
+    var code = "_c(\"".concat(el.tag, "\", ").concat(el.attrs.length ? genProps(el.attrs) : 'undefined').concat(children ? ",".concat(children) : '', ")");
+    return code;
+  }
 
   function compileToRender(template) {
-    function genProps(attrs) {
-      // 处理属性 拼接成属性字符串
-      var str = '';
-      var _loop = function _loop() {
-        var attr = attrs[i];
-        if (attr.name === 'style') {
-          var obj = {};
-          attr.value.split(';').forEach(function (item) {
-            var _item$split = item.split(':'),
-              _item$split2 = _slicedToArray(_item$split, 2),
-              key = _item$split2[0],
-              value = _item$split2[1];
-            obj[key] = value.trim();
-          });
-          attr.value = obj;
-        }
-        str += "".concat(attr.name, ": ").concat(JSON.stringify(attr.value), ",");
-      };
-      for (var i = 0; i < attrs.length; i++) {
-        _loop();
-      }
-      return "{".concat(str.slice(0, -1), "}");
-    }
-    function genChildren(el) {
-      var children = el.children;
-      if (children && children.length > 0) {
-        return "".concat(children.map(function (c) {
-          return gen(c);
-        }).join(','));
-      } else {
-        return false;
-      }
-    }
-    function gen(node) {
-      if (node.type === 1) {
-        return generate(node);
-      } else {
-        var text = node.text;
-        var token = [];
-        var match;
-        var lastIndex = 0;
-        defaultTagRE.lastIndex = 0;
-        while (match = defaultTagRE.exec(text)) {
-          var _index = match.index;
-          if (_index > lastIndex) {
-            token.push(JSON.stringify(text.slice(lastIndex, _index)));
-          }
-          var value = match[1].trim();
-          token.push("_s(".concat(value, ")"));
-          lastIndex = match.index + match[0].length;
-        }
-        if (lastIndex < text.length) {
-          token.push(JSON.stringify(text.slice(lastIndex)));
-        }
-        return "_v(".concat(token.join('+'), ")");
-      }
-    }
-    function generate(el) {
-      var children = genChildren(el);
-      var code = "_c(\"".concat(el.tag, "\", ").concat(el.attrs.length ? genProps(el.attrs) : 'undefined').concat(children ? ",".concat(children) : '', ")");
-      return code;
-    }
     // 解析html字符串，将html字符串变成ast语法树
     var root = parseHtml(template);
     // console.log('root', root)

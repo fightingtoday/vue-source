@@ -18,50 +18,50 @@ const doctype = /^<!DOCTYPE [^>]+>/i
 const comment = /^<!\--/
 const conditionalComment = /^<!\[/
 
-let root = null //ast语法树树根
-let currentParent = null // 当前父节点
-let stack = [] // 栈存放dom 标签结构，判断标签是否正确闭合
-const ELEMENT_TYPE = 1
-const TEXT_TYPE = 3
-
-function createASTElement(tagName, attrs) {
-  return {
-    type: ELEMENT_TYPE,
-    tag: tagName,
-    attrs: attrs,
-    children: [],
-    parent: null,
-  }
-}
-function start(tagName, attrs) {
-//   console.log('开始标签：', tagName, '属性是：', attrs)
-  let element = createASTElement(tagName, attrs)
-  if (!root) {
-    root = element
-  }
-  currentParent = element
-  stack.push(element) // 标签入栈
-}
-function chars(text) {
-//   console.log('文本是：', text)
-  text = text.replace(/\s/g, '')
-  if (text) {
-    currentParent.children.push({
-      text,
-      type: TEXT_TYPE,
-    })
-  }
-}
-function end(tagName) {
-//   console.log('结束标签：', tagName)
-  let element = stack.pop()
-  currentParent = stack.length > 0 ? stack[stack.length - 1] : null
-  if (currentParent) {
-    element.parent = currentParent
-    currentParent.children.push(element) //实现了树的父子关系
-  }
-}
 export function parseHtml(html) {
+  let root = null //ast语法树树根
+  let currentParent = null // 当前父节点
+  let stack = [] // 栈存放dom 标签结构，判断标签是否正确闭合
+  const ELEMENT_TYPE = 1
+  const TEXT_TYPE = 3
+
+  function createASTElement(tagName, attrs) {
+    return {
+      type: ELEMENT_TYPE,
+      tag: tagName,
+      attrs: attrs,
+      children: [],
+      parent: null,
+    }
+  }
+  function start(tagName, attrs) {
+    //   console.log('开始标签：', tagName, '属性是：', attrs)
+    let element = createASTElement(tagName, attrs)
+    if (!root) {
+      root = element
+    }
+    currentParent = element
+    stack.push(element) // 标签入栈
+  }
+  function chars(text) {
+    //   console.log('文本是：', text)
+    text = text.replace(/\s/g, '')
+    if (text) {
+      currentParent.children.push({
+        text,
+        type: TEXT_TYPE,
+      })
+    }
+  }
+  function end(tagName) {
+    //   console.log('结束标签：', tagName)
+    let element = stack.pop()
+    currentParent = stack.length > 0 ? stack[stack.length - 1] : null
+    if (currentParent) {
+      element.parent = currentParent
+      currentParent.children.push(element) //实现了树的父子关系
+    }
+  }
   while (html) {
     let textEnd = html.indexOf('<')
     if (textEnd === 0) {
@@ -72,7 +72,7 @@ export function parseHtml(html) {
       }
 
       let endTagMatch = html.match(endTag)
-    //   console.log('endTagMatch', endTagMatch)
+      //   console.log('endTagMatch', endTagMatch)
       if (endTagMatch) {
         advance(endTagMatch[0].length)
         end(endTagMatch[1])
