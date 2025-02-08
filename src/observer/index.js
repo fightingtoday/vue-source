@@ -35,6 +35,7 @@ function defineReactive(data, key, value) {
     get() {
       if (Dep.target) {
         dep.depend() // 收集依赖
+        console.log('dep-subs', dep.subs)
       }
       return value
     },

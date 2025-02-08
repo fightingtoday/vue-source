@@ -210,18 +210,23 @@
     };
   });
 
-  var id = 0;
+  var id$1 = 0;
   var Dep = /*#__PURE__*/function () {
     function Dep() {
       _classCallCheck(this, Dep);
-      this.id = id++;
+      this.id = id$1++;
       this.subs = [];
     }
     return _createClass(Dep, [{
+      key: "addSubs",
+      value: function addSubs(watcher) {
+        this.subs.push(watcher);
+      }
+    }, {
       key: "depend",
       value: function depend() {
         if (Dep.target) {
-          this.subs.push(Dep.target);
+          Dep.target.addDep(this);
         }
       }
     }, {
@@ -281,6 +286,7 @@
       get: function get() {
         if (Dep.target) {
           dep.depend(); // 收集依赖
+          console.log('dep-subs', dep.subs);
         }
         return value;
       },
@@ -509,11 +515,15 @@
     return renderFn;
   }
 
+  var id = 0;
   var Watcher = /*#__PURE__*/function () {
     function Watcher(vm, expOrFn, cb, options) {
       _classCallCheck(this, Watcher);
       this.vm = vm;
+      this.id = id++;
       this.getter = expOrFn;
+      this.depsId = new Set();
+      this.deps = [];
       this.cb = cb;
       this.options = options;
       this.get();
@@ -529,6 +539,16 @@
       key: "update",
       value: function update() {
         this.getter();
+      }
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.depsId.add(id);
+          this.deps.push(dep);
+          dep.addSubs(this);
+        }
       }
     }]);
   }();

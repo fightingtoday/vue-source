@@ -4,9 +4,12 @@ class Dep {
     this.id = id++
     this.subs = []
   }
+  addSubs(watcher) {
+    this.subs.push(watcher)
+  }
   depend() {
     if (Dep.target) {
-      this.subs.push(Dep.target)
+      Dep.target.addDep(this)
     }
   }
   notify() {
