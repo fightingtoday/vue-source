@@ -8,6 +8,7 @@ export function patch(oldVnode, vnode) {
     let el = createElm(vnode)
     parentElm.insertBefore(el, oldElm.nextSibling) // ��入到dom中
     parentElm.removeChild(oldElm)
+    return el
   }
 }
 // 根据虚拟节点创建真实节点

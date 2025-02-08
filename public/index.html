@@ -42,6 +42,18 @@
             },
           }
         },
+        beforeCreate() {
+          console.log('beforeCreate')
+        },
+        created() {
+          console.log('created', this.address.area, this.$el)
+        },
+        beforeMount() {
+          console.log('beforeMount', this.$el)
+        },
+        mounted() {
+          console.log('mounted', this.$el)
+        },
       })
       vm._data.arr.push({ same: false })
     </script>

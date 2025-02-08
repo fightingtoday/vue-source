@@ -26,6 +26,14 @@
       writable: false
     }), e;
   }
+  function _defineProperty(e, r, t) {
+    return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
+      value: t,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    }) : e[r] = t, e;
+  }
   function _iterableToArrayLimit(r, l) {
     var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
     if (null != t) {
@@ -53,6 +61,27 @@
   function _nonIterableRest() {
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
+  function ownKeys(e, r) {
+    var t = Object.keys(e);
+    if (Object.getOwnPropertySymbols) {
+      var o = Object.getOwnPropertySymbols(e);
+      r && (o = o.filter(function (r) {
+        return Object.getOwnPropertyDescriptor(e, r).enumerable;
+      })), t.push.apply(t, o);
+    }
+    return t;
+  }
+  function _objectSpread2(e) {
+    for (var r = 1; r < arguments.length; r++) {
+      var t = null != arguments[r] ? arguments[r] : {};
+      r % 2 ? ownKeys(Object(t), true).forEach(function (r) {
+        _defineProperty(e, r, t[r]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) {
+        Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+      });
+    }
+    return e;
+  }
   function _slicedToArray(r, e) {
     return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest();
   }
@@ -60,11 +89,11 @@
     if ("object" != typeof t || !t) return t;
     var e = t[Symbol.toPrimitive];
     if (undefined !== e) {
-      var i = e.call(t, r);
+      var i = e.call(t, r || "default");
       if ("object" != typeof i) return i;
       throw new TypeError("@@toPrimitive must return a primitive value.");
     }
-    return (String )(t);
+    return ("string" === r ? String : Number)(t);
   }
   function _toPropertyKey(t) {
     var i = _toPrimitive(t, "string");
@@ -108,6 +137,48 @@
         target[sourceKey][key] = newValue;
       }
     });
+  }
+  var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed'];
+  var strats = {};
+  function mergeHook(parent, child) {
+    if (child) {
+      if (parent) {
+        return parent.concat(child);
+      } else {
+        return [child];
+      }
+    } else {
+      return parent;
+    }
+  }
+  LIFECYCLE_HOOKS.forEach(function (hook) {
+    strats[hook] = mergeHook;
+  });
+  function mergeOptions(parent, child) {
+    var options = {};
+    for (var key in parent) {
+      mergeField(key);
+    }
+    for (var _key in child) {
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+    // 默认的合并策略，但是有些属性有特殊的合并方式（生命周期等）
+    function mergeField(key) {
+      if (strats[key]) {
+        options[key] = strats[key](parent[key], child[key]);
+        return;
+      }
+      if (_typeof(parent[key]) === 'object' && _typeof(child[key]) === 'object') {
+        options[key] = _objectSpread2(_objectSpread2({}, parent[key]), child[key]);
+      } else if (child[key] === null) {
+        options[key] = parent[key];
+      } else {
+        options[key] = child[key];
+      }
+    }
+    return options;
   }
 
   // 重写数组的方法 push、pop、shift、unshift、sort、splice、reverse(这些方法回改变原数组所以需要重写)，slice这个方法不会改变原数组所以不需要重写
@@ -427,6 +498,7 @@
       var el = createElm(vnode);
       parentElm.insertBefore(el, oldElm.nextSibling); // ��入到dom中
       parentElm.removeChild(oldElm);
+      return el;
     }
   }
   // 根据虚拟节点创建真实节点
@@ -474,7 +546,7 @@
   }
   function mountComponent(vm, el) {
     vm.$options;
-
+    callHook(vm, 'beforeMount');
     // 渲染页面
     // 无论渲染还是更新都会调用此方法
     var updateComponent = function updateComponent() {
@@ -482,14 +554,26 @@
     };
     // 渲染watcher 每个组件都有一个watcher
     new Watcher(vm, updateComponent, function () {}, true); // true表示他是一个渲染watcher
+    callHook(vm, 'mounted');
+  }
+  function callHook(vm, hook) {
+    var handlers = vm.$options[hook];
+    if (handlers) {
+      // 找到对应的钩子依次执行
+      for (var i = 0, j = handlers.length; i < j; i++) {
+        handlers[i].call(vm);
+      }
+    }
   }
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
-      vm.$options = options || {};
+      vm.$options = mergeOptions(vm.constructor.options, options) || {};
+      callHook(vm, 'beforeCreate');
       // 初始化状态
       initState(vm);
+      callHook(vm, 'created');
       if (vm.$options.el) {
         vm.$mount(vm.$options.el);
       }
@@ -555,12 +639,33 @@
     };
   }
 
+  function initGlobalAPI(Vue) {
+    Vue.options = {};
+    Vue.mixin = function (mixin) {
+      this.options = mergeOptions(this.options, mixin);
+    };
+    Vue.mixin({
+      a: 1,
+      beforeCreate: function beforeCreate() {
+        console.log('beforeCreate1');
+      }
+    });
+    Vue.mixin({
+      b: 2,
+      beforeCreate: function beforeCreate() {
+        console.log('beforeCreate2');
+      }
+    });
+    console.log(33333, Vue.options);
+  }
+
   function Vue(options) {
     this._init(options);
   }
   initMixin(Vue);
   renderMixin(Vue);
   lifecycleMixin(Vue);
+  initGlobalAPI(Vue);
 
   return Vue;
 

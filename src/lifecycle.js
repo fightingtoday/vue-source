@@ -11,7 +11,7 @@ export function lifecycleMixin(Vue) {
 }
 export function mountComponent(vm, el) {
   const options = vm.$options
-
+  callHook(vm, 'beforeMount')
   // 渲染页面
   // 无论渲染还是更新都会调用此方法
   let updateComponent = () => {
@@ -19,4 +19,15 @@ export function mountComponent(vm, el) {
   }
   // 渲染watcher 每个组件都有一个watcher
   new Watcher(vm, updateComponent, () => {}, true) // true表示他是一个渲染watcher
+  callHook(vm, 'mounted')
+}
+
+export function callHook(vm, hook) {
+  const handlers = vm.$options[hook]
+  if (handlers) {
+    // 找到对应的钩子依次执行
+    for (let i = 0, j = handlers.length; i < j; i++) {
+      handlers[i].call(vm)
+    }
+  }
 }
