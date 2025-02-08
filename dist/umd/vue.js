@@ -210,6 +210,39 @@
     };
   });
 
+  var id = 0;
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+      this.id = id++;
+      this.subs = [];
+    }
+    return _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        if (Dep.target) {
+          this.subs.push(Dep.target);
+        }
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (sub) {
+          sub.update();
+        });
+      }
+    }]);
+  }();
+  var stack = [];
+  function pushTarget(watcher) {
+    Dep.target = watcher;
+    stack.push(watcher);
+  }
+  function popTarget() {
+    stack.pop();
+    Dep.target = stack.length && stack[stack.length - 1];
+  }
+
   var Observer = /*#__PURE__*/function () {
     function Observer(value) {
       _classCallCheck(this, Observer);
@@ -242,9 +275,13 @@
     }]);
   }();
   function defineReactive(data, key, value) {
+    var dep = new Dep();
     observer(value); // 递归实现深度检测
     Object.defineProperty(data, key, {
       get: function get() {
+        if (Dep.target) {
+          dep.depend(); // 收集依赖
+        }
         return value;
       },
       set: function set(newValue) {
@@ -252,6 +289,7 @@
         if (value !== newValue) {
           value = newValue;
         }
+        dep.notify(); // 通知所有依赖更新
       }
     });
   }
@@ -483,13 +521,19 @@
     return _createClass(Watcher, [{
       key: "get",
       value: function get() {
+        pushTarget(this);
+        this.getter();
+        popTarget();
+      }
+    }, {
+      key: "update",
+      value: function update() {
         this.getter();
       }
     }]);
   }();
 
   function patch(oldVnode, vnode) {
-    console.log(oldVnode, vnode);
     // 1、判断是更新还是渲染
     var isRealElement = oldVnode.nodeType;
     if (isRealElement) {

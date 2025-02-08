@@ -1,6 +1,8 @@
 // Object.defineProperty 不能兼容IE8以下
 import { isObject, def } from '../utils/index'
 import { arrayMethods } from './array.js'
+import Dep from './dep.js'
+
 class Observer {
   constructor(value) {
     value.__ob__ = this
@@ -27,9 +29,13 @@ class Observer {
   }
 }
 function defineReactive(data, key, value) {
+  let dep = new Dep()
   observer(value) // 递归实现深度检测
   Object.defineProperty(data, key, {
     get() {
+      if (Dep.target) {
+        dep.depend() // 收集依赖
+      }
       return value
     },
     set(newValue) {
@@ -37,6 +43,7 @@ function defineReactive(data, key, value) {
       if (value !== newValue) {
         value = newValue
       }
+      dep.notify() // 通知所有依赖更新
     },
   })
 }

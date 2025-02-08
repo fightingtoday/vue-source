@@ -42,19 +42,11 @@
             },
           }
         },
-        beforeCreate() {
-          console.log('beforeCreate')
-        },
-        created() {
-          console.log('created', this.address.area, this.$el)
-        },
-        beforeMount() {
-          console.log('beforeMount', this.$el)
-        },
-        mounted() {
-          console.log('mounted', this.$el)
-        },
       })
+      setTimeout(() => {
+        vm.message = 'Hi, happy new year'
+        vm._update(vm._render())
+      }, 1000)
       vm._data.arr.push({ same: false })
     </script>
   </body>

@@ -1,5 +1,4 @@
 export function patch(oldVnode, vnode) {
-  console.log(oldVnode, vnode)
   // 1、判断是更新还是渲染
   const isRealElement = oldVnode.nodeType
   if (isRealElement) {
