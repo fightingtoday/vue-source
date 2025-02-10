@@ -49,7 +49,11 @@
       setTimeout(() => {
         vm.message = 'Hi, happy new year'
         vm.arr[0].push({ same: false })
+        vm.arr[0].push({ same1: false })
         vm._update(vm._render())
+        vm.$nextTick(() => {
+          console.log(7777, vm.$el)
+        })
       }, 1000)
     </script>
   </body>

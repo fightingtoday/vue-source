@@ -535,6 +535,41 @@
     return renderFn;
   }
 
+  var callbacks = [];
+  var loading = false;
+  function flushCallback() {
+    for (var i = 0; i < callbacks.length; i++) {
+      callbacks[i]();
+    }
+    loading = false;
+    callbacks = [];
+  }
+  function nextTick(cb) {
+    callbacks.push(cb);
+    if (!loading) {
+      loading = true;
+      setTimeout(flushCallback, 0);
+    }
+  }
+
+  var queue = [];
+  var has = {};
+  function flush() {
+    queue.forEach(function (watcher) {
+      watcher.run();
+    });
+    queue = [];
+    has = {};
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+    if (has[id] === null) {
+      queue.push(watcher);
+      has[id] = true;
+    }
+    nextTick(flush);
+  }
+
   var id = 0;
   var Watcher = /*#__PURE__*/function () {
     function Watcher(vm, expOrFn, cb, options) {
@@ -558,6 +593,13 @@
     }, {
       key: "update",
       value: function update() {
+        // 等待着一起更新
+        // this.getter()
+        queueWatcher(this);
+      }
+    }, {
+      key: "run",
+      value: function run() {
         this.getter();
       }
     }, {
@@ -634,6 +676,7 @@
     // 渲染页面
     // 无论渲染还是更新都会调用此方法
     var updateComponent = function updateComponent() {
+      console.log('update');
       vm._update(vm._render());
     };
     // 渲染watcher 每个组件都有一个watcher
@@ -677,6 +720,7 @@
       }
       mountComponent(vm);
     };
+    Vue.prototype.$nextTick = nextTick;
   }
 
   function createElement(tag, data) {
