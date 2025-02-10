@@ -206,6 +206,7 @@
       if (insert) {
         ob.observerArray(insert);
       }
+      ob.dep.notify();
       return result;
     };
   });
@@ -252,6 +253,7 @@
     function Observer(value) {
       _classCallCheck(this, Observer);
       value.__ob__ = this;
+      this.dep = new Dep();
       def(value, '__ob__', this);
       if (Array.isArray(value)) {
         // 数组不会对索引进行监控，性能差，前端开发中通过索引去操作也很少，一般用的push、 pop等方法
@@ -281,12 +283,21 @@
   }();
   function defineReactive(data, key, value) {
     var dep = new Dep();
-    observer(value); // 递归实现深度检测
+    // 这里的value有可能是对象，也可能是数组， 返回的结果是observer的实例
+    var childOb = observer(value); // 递归实现深度检测
     Object.defineProperty(data, key, {
       get: function get() {
         if (Dep.target) {
           dep.depend(); // 收集依赖
-          console.log('dep-subs', dep.subs);
+          if (childOb) {
+            // 数组的依赖手机
+            childOb.dep.depend(); // 收集依赖
+
+            // 数组中还有数组
+            if (Array.isArray(value)) {
+              dependArray(value);
+            }
+          }
         }
         return value;
       },
@@ -298,6 +309,15 @@
         dep.notify(); // 通知所有依赖更新
       }
     });
+  }
+  function dependArray(value) {
+    for (var i = 0; i < value.length; i++) {
+      var current = value[i]; //数组中的数组依赖收集
+      current._ob_ && current._ob_.dep.depend();
+      if (Array.isArray(current)) {
+        dependArray(current);
+      }
+    }
   }
   function observer(data) {
     if (!isObject(data)) {

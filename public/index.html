@@ -21,6 +21,9 @@
     <div class="app testcss tttccc" style="color: red; font-size: 16px">
       <p>1234</p>
       <span>hello{{ message }}{{ message }}{{ message }}{{ message }}</span>
+      <ul>
+        <li>{{arr}}</li>
+      </ul>
     </div>
     <script src="../dist/umd/vue.js"></script>
     <script>
@@ -29,7 +32,7 @@
         data() {
           return {
             message: 'Hello, Vue.js!',
-            arr: [{ name: 1 }],
+            arr: [[{ name: 1 }]],
             address: {
               area: '北京',
               street: '昌平区',
@@ -45,9 +48,9 @@
       })
       setTimeout(() => {
         vm.message = 'Hi, happy new year'
+        vm.arr[0].push({ same: false })
         vm._update(vm._render())
       }, 1000)
-      vm._data.arr.push({ same: false })
     </script>
   </body>
 </html>

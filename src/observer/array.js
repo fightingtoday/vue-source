@@ -23,6 +23,7 @@ methods.forEach(function (method) {
     if (insert) {
       ob.observerArray(insert)
     }
+    ob.dep.notify()
     return result
   }
 })
