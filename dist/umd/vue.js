@@ -154,6 +154,16 @@
   LIFECYCLE_HOOKS.forEach(function (hook) {
     strats[hook] = mergeHook;
   });
+  function mergeAssets(parentVal, childVal) {
+    var res = Object.create(parentVal); // res.__proto__ = parentVal  把全局组件放到原型链上，自己的components上找不到去原型链上找
+    if (childVal) {
+      for (var key in childVal) {
+        res[key] = childVal[key];
+      }
+    }
+    return res;
+  }
+  strats.components = mergeAssets;
   function mergeOptions(parent, child) {
     var options = {};
     for (var key in parent) {
@@ -172,13 +182,22 @@
       }
       if (_typeof(parent[key]) === 'object' && _typeof(child[key]) === 'object') {
         options[key] = _objectSpread2(_objectSpread2({}, parent[key]), child[key]);
-      } else if (child[key] === null) {
+      } else if (!child[key]) {
         options[key] = parent[key];
       } else {
         options[key] = child[key];
       }
     }
     return options;
+  }
+  function isReservedTag(tagName) {
+    var str = 'div,p,span,i,section,img,a,input,button,ul,li';
+    var arr = str.split(',');
+    var obj = {};
+    arr.forEach(function (name) {
+      obj[name] = true;
+    });
+    return obj[tagName] || false;
   }
 
   // 重写数组的方法 push、pop、shift、unshift、sort、splice、reverse(这些方法回改变原数组所以需要重写)，slice这个方法不会改变原数组所以不需要重写
@@ -693,7 +712,7 @@
     }
   }
 
-  function initMixin(Vue) {
+  function initMixin$1(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
       vm.$options = mergeOptions(vm.constructor.options, options) || {};
@@ -723,35 +742,52 @@
     Vue.prototype.$nextTick = nextTick;
   }
 
-  function createElement(tag, data) {
+  function createElement(vm, tag, data) {
     var key = data && data.key;
     if (key) {
       delete data.key;
     }
-    for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-      children[_key - 2] = arguments[_key];
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
     }
-    return vnode(tag, data, key, children, undefined);
+    if (isReservedTag(tag)) {
+      // 原始标签的处理 div span ...
+      return vnode(tag, data, key, children, undefined);
+    } else {
+      // 组件的处理
+      var Ctor = vm.$options.components[tag];
+      return createComponent(vm, tag, data, key, children, Ctor);
+    }
+  }
+  function createComponent(vm, tag, data, key, children, Ctor) {
+    if (isObject(Ctor)) {
+      Ctor = vm.$options._base.extend(Ctor);
+    }
+    return vnode("vue-component".concat(Ctor.cid, "-").concat(tag), data, key, undefined, {
+      Ctor: Ctor,
+      children: children
+    });
   }
   function createTextVNode(text) {
     return vnode(undefined, undefined, undefined, undefined, text);
   }
-  function vnode(tag, data, key, children, text) {
+  function vnode(tag, data, key, children, text, componentOptions) {
     return {
       tag: tag,
       data: data,
       key: key,
       children: children,
-      text: text
+      text: text,
+      componentOptions: componentOptions
     };
   }
 
   function renderMixin(Vue) {
     Vue.prototype._c = function () {
-      return createElement.apply(undefined, arguments);
+      return createElement.apply(undefined, [this].concat(Array.prototype.slice.call(arguments)));
     };
     Vue.prototype._v = function (text) {
-      return createTextVNode(text);
+      return createTextVNode(this);
     };
     Vue.prototype._s = function (val) {
       return val === null ? '' : _typeof(val) === 'object' ? JSON.stringify(val) : val;
@@ -767,30 +803,59 @@
     };
   }
 
-  function initGlobalAPI(Vue) {
-    Vue.options = {};
+  function initMixin(Vue) {
     Vue.mixin = function (mixin) {
       this.options = mergeOptions(this.options, mixin);
     };
-    Vue.mixin({
-      a: 1,
-      beforeCreate: function beforeCreate() {
-        console.log('beforeCreate1');
-      }
+  }
+
+  var ASSETS_TYPE = ['component', 'directive', 'filter'];
+
+  function initAssetRegisters(Vue) {
+    ASSETS_TYPE.forEach(function (type) {
+      Vue[type] = function (id, definition) {
+        console.log(id, definition);
+        if (type === 'component') {
+          // 注册全局组件
+          // 使用extend 方法将对象变成构造函数
+          definition = this.options._base.extend(definition);
+        }
+        this.options[type + 's'] = definition;
+      };
     });
-    Vue.mixin({
-      b: 2,
-      beforeCreate: function beforeCreate() {
-        console.log('beforeCreate2');
-      }
+  }
+
+  function initExtend(Vue) {
+    // 创建出一个子类拥有父类的方法
+    var cid = 0;
+    Vue.extend = function (extendOptions) {
+      var Super = this;
+      var Sub = function VueComponent(options) {
+        this._init(options);
+      };
+      Sub.cid = cid++;
+      Sub.prototype = Object.create(Super.prototype);
+      Sub.prototype.constructor = Sub;
+      Sub.options = mergeOptions(Super.options, extendOptions);
+      return Sub;
+    };
+  }
+
+  function initGlobalAPI(Vue) {
+    Vue.options = {};
+    ASSETS_TYPE.forEach(function (type) {
+      Vue.options[type + 's'] = {};
     });
-    console.log(33333, Vue.options);
+    Vue.options._base = Vue; // _base是vue的构造函数
+    initMixin(Vue);
+    initExtend(Vue);
+    initAssetRegisters(Vue);
   }
 
   function Vue(options) {
     this._init(options);
   }
-  initMixin(Vue);
+  initMixin$1(Vue);
   renderMixin(Vue);
   lifecycleMixin(Vue);
   initGlobalAPI(Vue);

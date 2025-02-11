@@ -1,20 +1,15 @@
-import { mergeOptions } from '../utils/index'
+import { initMixin } from './mixin.js'
+import { initAssetRegisters } from './assets.js'
+import { ASSETS_TYPE } from './const.js'
+import { initExtend } from './extend.js'
+
 export function initGlobalAPI(Vue) {
   Vue.options = {}
-  Vue.mixin = function (mixin) {
-    this.options = mergeOptions(this.options, mixin)
-  }
-  Vue.mixin({
-    a: 1,
-    beforeCreate: function () {
-      console.log('beforeCreate1')
-    },
+  ASSETS_TYPE.forEach(function (type) {
+    Vue.options[type + 's'] = {}
   })
-  Vue.mixin({
-    b: 2,
-    beforeCreate: function () {
-      console.log('beforeCreate2')
-    },
-  })
-  console.log(33333, Vue.options)
+  Vue.options._base = Vue // _base是vue的构造函数
+  initMixin(Vue)
+  initExtend(Vue)
+  initAssetRegisters(Vue)
 }

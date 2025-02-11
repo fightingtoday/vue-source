@@ -1,10 +1,10 @@
 import { createElement, createTextVNode } from './vdom/create-element.js'
 export function renderMixin(Vue) {
   Vue.prototype._c = function () {
-    return createElement(...arguments)
+    return createElement(this, ...arguments)
   }
   Vue.prototype._v = function (text) {
-    return createTextVNode(text)
+    return createTextVNode(this, text)
   }
   Vue.prototype._s = function (val) {
     return val === null
