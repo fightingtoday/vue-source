@@ -22,12 +22,12 @@ export function initMixin(Vue) {
     vm.$el = document.querySelector(el)
     const render = options.render
     if (!render) {
-      let template = vm.template
+      let template = options.template
       if (!template && vm.$el) {
         template = vm.$el.outerHTML
-        const render = compileToRender(template)
-        options.render = render
       }
+      const render = compileToRender(template)
+      options.render = render
     }
     mountComponent(vm)
   }

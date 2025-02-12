@@ -24,7 +24,9 @@
       <ul>
         <li>{{arr}}</li>
       </ul>
-      <my-component2>
+      <my-component1></my-component1>
+      <my-component2></my-component2>
+      <my-component2> </my-component2>
     </div>
     <script src="../dist/umd/vue.js"></script>
     <script>
@@ -51,7 +53,12 @@
         },
         components: {
           'my-component2': {
-            template: '<div>my-component1</div>',
+            template: '<div>测试我的组件<aa></aa>内容</div>',
+            components: {
+              aa: {
+                template: '<div>aa</div>',
+              },
+            },
           },
         },
       })
@@ -60,11 +67,7 @@
         vm.arr[0].push({ same: false })
         vm.arr[0].push({ same1: false })
         vm._update(vm._render())
-        vm.$nextTick(() => {
-          console.log(7777, vm.$el)
-        })
       }, 1000)
-      console.log(222222, vm)
     </script>
   </body>
 </html>

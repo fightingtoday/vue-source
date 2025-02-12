@@ -635,15 +635,31 @@
   }();
 
   function patch(oldVnode, vnode) {
-    // 1、判断是更新还是渲染
-    var isRealElement = oldVnode.nodeType;
-    if (isRealElement) {
-      var oldElm = oldVnode; // div app
-      var parentElm = oldVnode.parentNode; // body
+    if (!oldVnode) {
+      // 这里是组件的挂载
       var el = createElm(vnode);
-      parentElm.insertBefore(el, oldElm.nextSibling); // ��入到dom中
-      parentElm.removeChild(oldElm);
       return el;
+    } else {
+      // 1、判断是更新还是渲染
+      var isRealElement = oldVnode.nodeType;
+      if (isRealElement) {
+        var oldElm = oldVnode; // div app
+        var parentElm = oldVnode.parentNode; // body
+        var _el = createElm(vnode);
+        parentElm.insertBefore(_el, oldElm.nextSibling); // ��入到dom中
+        parentElm.removeChild(oldElm);
+        return _el;
+      }
+    }
+  }
+  function createComponent$1(vnode) {
+    // 判断是不是组件
+    var i = vnode.data;
+    if ((i = i.hooks) && (i = i.init)) {
+      i(vnode);
+    }
+    if (vnode.componentInstance) {
+      return true;
     }
   }
   // 根据虚拟节点创建真实节点
@@ -654,6 +670,10 @@
       vnode.key;
       var text = vnode.text;
     if (typeof tag === 'string') {
+      // 有可能是组件
+      if (createComponent$1(vnode)) {
+        return vnode.componentInstance.$el;
+      }
       vnode.el = document.createElement(tag);
       updateProperties(vnode);
       children.forEach(function (child) {
@@ -730,19 +750,20 @@
       vm.$el = document.querySelector(el);
       var render = options.render;
       if (!render) {
-        var template = vm.template;
+        var template = options.template;
         if (!template && vm.$el) {
           template = vm.$el.outerHTML;
-          var _render = compileToRender(template);
-          options.render = _render;
         }
+        var _render = compileToRender(template);
+        options.render = _render;
       }
       mountComponent(vm);
     };
     Vue.prototype.$nextTick = nextTick;
   }
 
-  function createElement(vm, tag, data) {
+  function createElement(vm, tag) {
+    var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     var key = data && data.key;
     if (key) {
       delete data.key;
@@ -763,7 +784,18 @@
     if (isObject(Ctor)) {
       Ctor = vm.$options._base.extend(Ctor);
     }
-    return vnode("vue-component".concat(Ctor.cid, "-").concat(tag), data, key, undefined, {
+    data.hooks = {
+      init: function init(vnode) {
+        // 当前组件的实例就是componentInstance
+        var child = new Ctor({
+          _isComponent: true
+        });
+        vnode.componentInstance = child;
+        // 组件的挂载
+        child.$mount();
+      }
+    };
+    return vnode("vue-component".concat(Ctor.cid, "-").concat(tag), data, key, undefined, undefined, {
       Ctor: Ctor,
       children: children
     });
@@ -787,7 +819,7 @@
       return createElement.apply(undefined, [this].concat(Array.prototype.slice.call(arguments)));
     };
     Vue.prototype._v = function (text) {
-      return createTextVNode(this);
+      return createTextVNode(text);
     };
     Vue.prototype._s = function (val) {
       return val === null ? '' : _typeof(val) === 'object' ? JSON.stringify(val) : val;
@@ -814,13 +846,13 @@
   function initAssetRegisters(Vue) {
     ASSETS_TYPE.forEach(function (type) {
       Vue[type] = function (id, definition) {
-        console.log(id, definition);
         if (type === 'component') {
           // 注册全局组件
           // 使用extend 方法将对象变成构造函数
+          definition.name = definition.name || id;
           definition = this.options._base.extend(definition);
         }
-        this.options[type + 's'] = definition;
+        this.options[type + 's'][id] = definition;
       };
     });
   }

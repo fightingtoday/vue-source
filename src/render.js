@@ -4,7 +4,7 @@ export function renderMixin(Vue) {
     return createElement(this, ...arguments)
   }
   Vue.prototype._v = function (text) {
-    return createTextVNode(this, text)
+    return createTextVNode(text)
   }
   Vue.prototype._s = function (val) {
     return val === null
