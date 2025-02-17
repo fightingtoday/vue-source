@@ -687,27 +687,49 @@
   function isSameVnode(oVnode, nVnode) {
     return oVnode.tag === nVnode.tag && oVnode.key === nVnode.key;
   }
-  function updateChildren(el, oldChildren, newChildren) {
+  function updateChildren(parent, oldChildren, newChildren) {
     // vue 采用的是双指针
     var oldStartIdx = 0;
     var oldStartVnode = oldChildren[0];
     var oldEndIdx = oldChildren.length - 1;
-    oldChildren[oldEndIdx];
+    var oldEndVnode = oldChildren[oldEndIdx];
     var newStartIdx = 0;
     var newStartVnode = newChildren[0];
     var newEndIdx = newChildren.length - 1;
-    newChildren[newEndIdx];
+    var newEndVnode = newChildren[newEndIdx];
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      // 优化向后插入的情况
       if (isSameVnode(oldStartVnode, newStartVnode)) {
         patch(oldStartVnode, newStartVnode);
         oldStartVnode = oldChildren[++oldStartIdx];
         newStartVnode = newChildren[++newStartIdx];
       }
+      // 优化向前插入的情况
+      else if (isSameVnode(oldEndVnode, newEndVnode)) {
+        patch(oldEndVnode, newEndVnode);
+        oldEndVnode = oldChildren[--oldEndIdx];
+        newEndVnode = newChildren[--newEndIdx];
+      }
+      // 头移尾 A B C D 变成   B C D A
+      else if (isSameVnode(oldStartVnode, newEndVnode)) {
+        patch(oldStartVnode, newEndVnode);
+        parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+        oldStartVnode = oldChildren[++oldStartIdx];
+        newEndVnode = newChildren[--newEndIdx];
+      }
+      // 尾移头 A B C D 变成   D A B C
+      else if (isSameVnode(oldEndVnode, newStartVnode)) {
+        patch(oldEndVnode, newStartVnode);
+        parent.insertBefore(oldEndVnode.el, oldStartVnode.el);
+        oldEndVnode = oldChildren[--oldStartIdx];
+        newStartVnode = newChildren[++newEndIdx];
+      }
     }
     if (newStartIdx <= newEndIdx) {
       for (var i = newStartIdx; i <= newEndIdx; i++) {
-        // 将新增元素直接插入
-        el.appendChild(createElm(newChildren[i]));
+        // 将新增元素直接插入（可能是向后插入或向前插入）
+        var el = !newChildren[newEndIdx + 1] ? null : newChildren[newEndIdx + 1].el;
+        parent.insertBefore(createElm(newChildren[i]), el);
       }
     }
   }
@@ -972,7 +994,7 @@
       name: 'test'
     }
   });
-  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" style=\"background:red\">\n  <div style=\"background:red\" key=\"A\">A</div>\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n  <div style=\"background:green\" key=\"D\">D</div>\n  </div>");
+  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" >\n  <div style=\"background:red\" key=\"A\">A</div>\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n  <div style=\"background:green\" key=\"D\">D</div>\n  </div>");
   var vnode = render1.call(vm1);
   var el = createElm(vnode);
   document.body.appendChild(el);
@@ -981,7 +1003,7 @@
       test: 'zzzzzz'
     }
   });
-  var render2 = compileToRender("<div class=\"vm2 pClass\" style=\"color:blue\">\n   <div style=\"background:red\" key=\"A\">A</div>\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n  <div style=\"background:green\" key=\"D\">D</div>\n    <div style=\"background:gray\" key=\"E\">E</div>\n\n  </div>");
+  var render2 = compileToRender("<div class=\"vm2 pClass\" >\n    <div style=\"background:green\" key=\"D\">D</div>\n\n       <div style=\"background:red\" key=\"A\">A</div>\n\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n\n\n  </div>");
   var newvnode = render2.call(vm2);
   setTimeout(function () {
     patch(vnode, newvnode);

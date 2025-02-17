@@ -52,7 +52,7 @@ function isSameVnode(oVnode, nVnode) {
   return oVnode.tag === nVnode.tag && oVnode.key === nVnode.key
 }
 
-function updateChildren(el, oldChildren, newChildren) {
+function updateChildren(parent, oldChildren, newChildren) {
   // vue 采用的是双指针
   let oldStartIdx = 0
   let oldStartVnode = oldChildren[0]
@@ -64,16 +64,40 @@ function updateChildren(el, oldChildren, newChildren) {
   let newEndIdx = newChildren.length - 1
   let newEndVnode = newChildren[newEndIdx]
   while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    // 优化向后插入的情况
     if (isSameVnode(oldStartVnode, newStartVnode)) {
       patch(oldStartVnode, newStartVnode)
       oldStartVnode = oldChildren[++oldStartIdx]
       newStartVnode = newChildren[++newStartIdx]
     }
+    // 优化向前插入的情况
+    else if (isSameVnode(oldEndVnode, newEndVnode)) {
+      patch(oldEndVnode, newEndVnode)
+      oldEndVnode = oldChildren[--oldEndIdx]
+      newEndVnode = newChildren[--newEndIdx]
+    }
+    // 头移尾 A B C D 变成   B C D A
+    else if (isSameVnode(oldStartVnode, newEndVnode)) {
+      patch(oldStartVnode, newEndVnode)
+      parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling)
+      oldStartVnode = oldChildren[++oldStartIdx]
+      newEndVnode = newChildren[--newEndIdx]
+    }
+    // 尾移头 A B C D 变成   D A B C
+    else if (isSameVnode(oldEndVnode, newStartVnode)) {
+      patch(oldEndVnode, newStartVnode)
+      parent.insertBefore(oldEndVnode.el, oldStartVnode.el)
+      oldEndVnode = oldChildren[--oldStartIdx]
+      newStartVnode = newChildren[++newEndIdx]
+    }
   }
   if (newStartIdx <= newEndIdx) {
     for (let i = newStartIdx; i <= newEndIdx; i++) {
-      // 将新增元素直接插入
-      el.appendChild(createElm(newChildren[i]))
+      // 将新增元素直接插入（可能是向后插入或向前插入）
+      let el = !newChildren[newEndIdx + 1]
+        ? null
+        : newChildren[newEndIdx + 1].el
+      parent.insertBefore(createElm(newChildren[i]), el)
     }
   }
 }
