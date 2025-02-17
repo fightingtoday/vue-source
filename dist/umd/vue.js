@@ -668,7 +668,10 @@
         // 比对子节点
         var oldChildren = oldVnode.children || [];
         var newChildren = vnode.children || [];
-        if (oldChildren.length > 0 && newChildren.length > 0) ; else if (newChildren.length > 0) {
+        if (oldChildren.length > 0 && newChildren.length > 0) {
+          // 新老都有子节点，需要比对子节点
+          updateChildren(_el2, oldChildren, newChildren);
+        } else if (newChildren.length > 0) {
           // 新的有子节点，老的没有
           for (var i = 0; i < newChildren.length; i++) {
             var child = newChildren[i];
@@ -678,6 +681,33 @@
           // 老的有子节点，新的没有
           _el2.innerHTML = '';
         }
+      }
+    }
+  }
+  function isSameVnode(oVnode, nVnode) {
+    return oVnode.tag === nVnode.tag && oVnode.key === nVnode.key;
+  }
+  function updateChildren(el, oldChildren, newChildren) {
+    // vue 采用的是双指针
+    var oldStartIdx = 0;
+    var oldStartVnode = oldChildren[0];
+    var oldEndIdx = oldChildren.length - 1;
+    oldChildren[oldEndIdx];
+    var newStartIdx = 0;
+    var newStartVnode = newChildren[0];
+    var newEndIdx = newChildren.length - 1;
+    newChildren[newEndIdx];
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      if (isSameVnode(oldStartVnode, newStartVnode)) {
+        patch(oldStartVnode, newStartVnode);
+        oldStartVnode = oldChildren[++oldStartIdx];
+        newStartVnode = newChildren[++newStartIdx];
+      }
+    }
+    if (newStartIdx <= newEndIdx) {
+      for (var i = newStartIdx; i <= newEndIdx; i++) {
+        // 将新增元素直接插入
+        el.appendChild(createElm(newChildren[i]));
       }
     }
   }
@@ -942,7 +972,7 @@
       name: 'test'
     }
   });
-  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" style=\"background:red\">Hello World1!{{name}}</div>");
+  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" style=\"background:red\">\n  <div style=\"background:red\" key=\"A\">A</div>\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n  <div style=\"background:green\" key=\"D\">D</div>\n  </div>");
   var vnode = render1.call(vm1);
   var el = createElm(vnode);
   document.body.appendChild(el);
@@ -951,7 +981,7 @@
       test: 'zzzzzz'
     }
   });
-  var render2 = compileToRender("<div class=\"vm2 pClass\" style=\"color:blue\"></div>");
+  var render2 = compileToRender("<div class=\"vm2 pClass\" style=\"color:blue\">\n   <div style=\"background:red\" key=\"A\">A</div>\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n  <div style=\"background:green\" key=\"D\">D</div>\n    <div style=\"background:gray\" key=\"E\">E</div>\n\n  </div>");
   var newvnode = render2.call(vm2);
   setTimeout(function () {
     patch(vnode, newvnode);

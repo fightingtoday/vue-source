@@ -48,8 +48,34 @@ export function patch(oldVnode, vnode) {
     }
   }
 }
+function isSameVnode(oVnode, nVnode) {
+  return oVnode.tag === nVnode.tag && oVnode.key === nVnode.key
+}
+
 function updateChildren(el, oldChildren, newChildren) {
-  
+  // vue 采用的是双指针
+  let oldStartIdx = 0
+  let oldStartVnode = oldChildren[0]
+  let oldEndIdx = oldChildren.length - 1
+  let oldEndVnode = oldChildren[oldEndIdx]
+
+  let newStartIdx = 0
+  let newStartVnode = newChildren[0]
+  let newEndIdx = newChildren.length - 1
+  let newEndVnode = newChildren[newEndIdx]
+  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    if (isSameVnode(oldStartVnode, newStartVnode)) {
+      patch(oldStartVnode, newStartVnode)
+      oldStartVnode = oldChildren[++oldStartIdx]
+      newStartVnode = newChildren[++newStartIdx]
+    }
+  }
+  if (newStartIdx <= newEndIdx) {
+    for (let i = newStartIdx; i <= newEndIdx; i++) {
+      // 将新增元素直接插入
+      el.appendChild(createElm(newChildren[i]))
+    }
+  }
 }
 function createComponent(vnode) {
   // 判断是不是组件
