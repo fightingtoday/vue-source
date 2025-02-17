@@ -13,6 +13,21 @@ export function patch(oldVnode, vnode) {
       parentElm.insertBefore(el, oldElm.nextSibling) // ��入到dom中
       parentElm.removeChild(oldElm)
       return el
+    } else {
+      // dom diff 平级比对，应为正常业务很少父变子，子变父亲
+      if (oldVnode.tag !== vnode.tag) {
+        // 1、标签不一致直接替换
+        oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el)
+      }
+      // 2、如果文本呢？文本都没有tag
+      if (!oldVnode.tag) {
+        if (oldVnode.text !== vnode.text) {
+          oldVnode.el.textContent = vnode.text
+        }
+      }
+      // 3、标签一致而且不是文本（比对属性是否一致）
+      let el = (vnode.el = oldVnode.el)
+      updateProperties(vnode, oldVnode.data)
     }
   }
 }
@@ -44,9 +59,23 @@ export function createElm(vnode) {
   }
   return vnode.el
 }
-function updateProperties(vnode) {
-  let data = vnode.data
+function updateProperties(vnode, oldProps = {}) {
+  let data = vnode.data || {}
   let el = vnode.el
+  // 如果老的属性中有新的属性中没有则删掉
+  for (let key in oldProps) {
+    if (!data[key]) {
+      el.removeAttribute(key)
+    }
+  }
+  // style 比对
+  let newStyle = data.style || {}
+  let oldStyle = oldProps.style || {}
+  for (let key in oldStyle) {
+    if (!newStyle[key]) {
+      el.style[key] = ''
+    }
+  }
   for (let key in data) {
     if (key === 'style') {
       for (let styleName in data.style) {

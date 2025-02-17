@@ -6,7 +6,7 @@ export function lifecycleMixin(Vue) {
     // 通过虚拟节点创建真实dom
     const vm = this
     vm.$el = patch(vm.$el, vnode)
-    console.log('vnode', vnode)
+    // console.log('vnode', vnode)
   }
 }
 export function mountComponent(vm, el) {
@@ -15,7 +15,7 @@ export function mountComponent(vm, el) {
   // 渲染页面
   // 无论渲染还是更新都会调用此方法
   let updateComponent = () => {
-    console.log('update')
+    // console.log('update')
     vm._update(vm._render())
   }
   // 渲染watcher 每个组件都有一个watcher

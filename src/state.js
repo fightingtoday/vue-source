@@ -23,7 +23,7 @@ export function initState(vm) {
 function initProps(vm) {}
 function initMethod(vm) {}
 function initData(vm) {
-  console.log('初始化数据', vm)
+  // console.log('初始化数据', vm)
   let data = vm.$options.data
   data = vm._data = typeof data === 'function' ? data.call(vm) : data
   // 代理 将vm.xxx 代理到vm._data.xxx(方便用户取值)

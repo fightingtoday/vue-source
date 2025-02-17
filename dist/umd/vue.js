@@ -357,7 +357,7 @@
     if (opts.watch) ;
   }
   function initData(vm) {
-    console.log('初始化数据', vm);
+    // console.log('初始化数据', vm)
     var data = vm.$options.data;
     data = vm._data = typeof data === 'function' ? data.call(vm) : data;
     // 代理 将vm.xxx 代理到vm._data.xxx(方便用户取值)
@@ -649,6 +649,21 @@
         parentElm.insertBefore(_el, oldElm.nextSibling); // ��入到dom中
         parentElm.removeChild(oldElm);
         return _el;
+      } else {
+        // dom diff 平级比对，应为正常业务很少父变子，子变父亲
+        if (oldVnode.tag !== vnode.tag) {
+          // 1、标签不一致直接替换
+          oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el);
+        }
+        // 2、如果文本呢？文本都没有tag
+        if (!oldVnode.tag) {
+          if (oldVnode.text !== vnode.text) {
+            oldVnode.el.textContent = vnode.text;
+          }
+        }
+        // 3、标签一致而且不是文本（比对属性是否一致）
+        vnode.el = oldVnode.el;
+        updateProperties(vnode, oldVnode.data);
       }
     }
   }
@@ -685,17 +700,32 @@
     return vnode.el;
   }
   function updateProperties(vnode) {
-    var data = vnode.data;
+    var oldProps = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var data = vnode.data || {};
     var el = vnode.el;
-    for (var key in data) {
-      if (key === 'style') {
+    // 如果老的属性中有新的属性中没有则删掉
+    for (var key in oldProps) {
+      if (!data[key]) {
+        el.removeAttribute(key);
+      }
+    }
+    // style 比对
+    var newStyle = data.style || {};
+    var oldStyle = oldProps.style || {};
+    for (var _key in oldStyle) {
+      if (!newStyle[_key]) {
+        el.style[_key] = '';
+      }
+    }
+    for (var _key2 in data) {
+      if (_key2 === 'style') {
         for (var styleName in data.style) {
           el.style[styleName] = data.style[styleName];
         }
-      } else if (key === 'class') {
+      } else if (_key2 === 'class') {
         el.className = data["class"];
       } else {
-        el.setAttribute(key, data[key]);
+        el.setAttribute(_key2, data[_key2]);
       }
     }
   }
@@ -706,7 +736,7 @@
       // 通过虚拟节点创建真实dom
       var vm = this;
       vm.$el = patch(vm.$el, vnode);
-      console.log('vnode', vnode);
+      // console.log('vnode', vnode)
     };
   }
   function mountComponent(vm, el) {
@@ -715,7 +745,7 @@
     // 渲染页面
     // 无论渲染还是更新都会调用此方法
     var updateComponent = function updateComponent() {
-      console.log('update');
+      // console.log('update')
       vm._update(vm._render());
     };
     // 渲染watcher 每个组件都有一个watcher
@@ -773,7 +803,7 @@
     }
     if (isReservedTag(tag)) {
       // 原始标签的处理 div span ...
-      return vnode(tag, data, key, children, undefined);
+      return vnode$1(tag, data, key, children, undefined);
     } else {
       // 组件的处理
       var Ctor = vm.$options.components[tag];
@@ -795,15 +825,15 @@
         child.$mount();
       }
     };
-    return vnode("vue-component".concat(Ctor.cid, "-").concat(tag), data, key, undefined, undefined, {
+    return vnode$1("vue-component".concat(Ctor.cid, "-").concat(tag), data, key, undefined, undefined, {
       Ctor: Ctor,
       children: children
     });
   }
   function createTextVNode(text) {
-    return vnode(undefined, undefined, undefined, undefined, text);
+    return vnode$1(undefined, undefined, undefined, undefined, text);
   }
-  function vnode(tag, data, key, children, text, componentOptions) {
+  function vnode$1(tag, data, key, children, text, componentOptions) {
     return {
       tag: tag,
       data: data,
@@ -891,6 +921,27 @@
   renderMixin(Vue);
   lifecycleMixin(Vue);
   initGlobalAPI(Vue);
+
+  // demo 产生两个虚拟节点进行比对
+  var vm1 = new Vue({
+    data: {
+      name: 'test'
+    }
+  });
+  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" style=\"background:red\">Hello World!{{name}}</div>");
+  var vnode = render1.call(vm1);
+  var el = createElm(vnode);
+  document.body.appendChild(el);
+  var vm2 = new Vue({
+    data: {
+      test: 'zzzzzz'
+    }
+  });
+  var render2 = compileToRender("<div class=\"vm2 pClass\" style=\"color:blue\">Hello World1!{{test}}</div>");
+  var newvnode = render2.call(vm2);
+  setTimeout(function () {
+    patch(vnode, newvnode);
+  }, 1000);
 
   return Vue;
 

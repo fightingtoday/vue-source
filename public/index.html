@@ -18,7 +18,7 @@
       >
     </noscript>
 
-    <div class="app testcss tttccc" style="color: red; font-size: 16px">
+    <!-- <div class="app testcss tttccc" style="color: red; font-size: 16px">
       <p>1234</p>
       <span>hello{{ message }}{{ message }}{{ message }}{{ message }}</span>
       <ul>
@@ -27,47 +27,47 @@
       <my-component1></my-component1>
       <my-component2></my-component2>
       <my-component2> </my-component2>
-    </div>
+    </div> -->
     <script src="../dist/umd/vue.js"></script>
     <script>
-      Vue.component('my-component1', {
-        template: '<div>my-component</div>',
-      })
-      let vm = new Vue({
-        el: '.app',
-        data() {
-          return {
-            message: 'Hello, Vue.js!',
-            arr: [[{ name: 1 }]],
-            address: {
-              area: '北京',
-              street: '昌平区',
-              number: '123456',
-              detail: '西三旗',
-              zipCode: '100000',
-              contact: {
-                phone: '17787878787',
-              },
-            },
-          }
-        },
-        components: {
-          'my-component2': {
-            template: '<div>测试我的组件<aa></aa>内容</div>',
-            components: {
-              aa: {
-                template: '<div>aa</div>',
-              },
-            },
-          },
-        },
-      })
-      setTimeout(() => {
-        vm.message = 'Hi, happy new year'
-        vm.arr[0].push({ same: false })
-        vm.arr[0].push({ same1: false })
-        vm._update(vm._render())
-      }, 1000)
+      // Vue.component('my-component1', {
+      //   template: '<div>my-component</div>',
+      // })
+      // let vm = new Vue({
+      //   el: '.app',
+      //   data() {
+      //     return {
+      //       message: 'Hello, Vue.js!',
+      //       arr: [[{ name: 1 }]],
+      //       address: {
+      //         area: '北京',
+      //         street: '昌平区',
+      //         number: '123456',
+      //         detail: '西三旗',
+      //         zipCode: '100000',
+      //         contact: {
+      //           phone: '17787878787',
+      //         },
+      //       },
+      //     }
+      //   },
+      //   components: {
+      //     'my-component2': {
+      //       template: '<div>测试我的组件<aa></aa>内容</div>',
+      //       components: {
+      //         aa: {
+      //           template: '<div>aa</div>',
+      //         },
+      //       },
+      //     },
+      //   },
+      // })
+      // setTimeout(() => {
+      //   vm.message = 'Hi, happy new year'
+      //   vm.arr[0].push({ same: false })
+      //   vm.arr[0].push({ same1: false })
+      //   vm._update(vm._render())
+      // }, 1000)
     </script>
   </body>
 </html>
