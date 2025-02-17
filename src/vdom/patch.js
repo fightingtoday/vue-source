@@ -28,8 +28,28 @@ export function patch(oldVnode, vnode) {
       // 3、标签一致而且不是文本（比对属性是否一致）
       let el = (vnode.el = oldVnode.el)
       updateProperties(vnode, oldVnode.data)
+
+      // 比对子节点
+      let oldChildren = oldVnode.children || []
+      let newChildren = vnode.children || []
+      if (oldChildren.length > 0 && newChildren.length > 0) {
+        // 新老都有子节点，需要比对子节点
+        updateChildren(el, oldChildren, newChildren)
+      } else if (newChildren.length > 0) {
+        // 新的有子节点，老的没有
+        for (let i = 0; i < newChildren.length; i++) {
+          let child = newChildren[i]
+          el.appendChild(createElm(child))
+        }
+      } else if (oldChildren.length > 0) {
+        // 老的有子节点，新的没有
+        el.innerHTML = ''
+      }
     }
   }
+}
+function updateChildren(el, oldChildren, newChildren) {
+  
 }
 function createComponent(vnode) {
   // 判断是不是组件

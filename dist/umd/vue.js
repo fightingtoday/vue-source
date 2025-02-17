@@ -662,8 +662,22 @@
           }
         }
         // 3、标签一致而且不是文本（比对属性是否一致）
-        vnode.el = oldVnode.el;
+        var _el2 = vnode.el = oldVnode.el;
         updateProperties(vnode, oldVnode.data);
+
+        // 比对子节点
+        var oldChildren = oldVnode.children || [];
+        var newChildren = vnode.children || [];
+        if (oldChildren.length > 0 && newChildren.length > 0) ; else if (newChildren.length > 0) {
+          // 新的有子节点，老的没有
+          for (var i = 0; i < newChildren.length; i++) {
+            var child = newChildren[i];
+            _el2.appendChild(createElm(child));
+          }
+        } else if (oldChildren.length > 0) {
+          // 老的有子节点，新的没有
+          _el2.innerHTML = '';
+        }
       }
     }
   }
@@ -928,7 +942,7 @@
       name: 'test'
     }
   });
-  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" style=\"background:red\">Hello World!{{name}}</div>");
+  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" style=\"background:red\">Hello World1!{{name}}</div>");
   var vnode = render1.call(vm1);
   var el = createElm(vnode);
   document.body.appendChild(el);
@@ -937,7 +951,7 @@
       test: 'zzzzzz'
     }
   });
-  var render2 = compileToRender("<div class=\"vm2 pClass\" style=\"color:blue\">Hello World1!{{test}}</div>");
+  var render2 = compileToRender("<div class=\"vm2 pClass\" style=\"color:blue\"></div>");
   var newvnode = render2.call(vm2);
   setTimeout(function () {
     patch(vnode, newvnode);
