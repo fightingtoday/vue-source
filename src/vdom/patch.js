@@ -48,7 +48,7 @@ export function patch(oldVnode, vnode) {
     }
   }
 }
-function isSameVnode(oVnode, nVnode) {
+function isSameVnode(oVnode, nVnode, index) {
   return oVnode.tag === nVnode.tag && oVnode.key === nVnode.key
 }
 
@@ -63,32 +63,63 @@ function updateChildren(parent, oldChildren, newChildren) {
   let newStartVnode = newChildren[0]
   let newEndIdx = newChildren.length - 1
   let newEndVnode = newChildren[newEndIdx]
+
+  const makeIndexByKey = (children) => {
+    let map = {}
+    children.forEach((child, index) => {
+      if (child.key) {
+        map[child.key] = index // 根据key创建一个映射表
+      }
+    })
+    return map
+  }
+  let map = makeIndexByKey(oldChildren)
   while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    if (!oldStartVnode) {
+      oldStartVnode = oldChildren[++oldStartIdx]
+    }
+    if (!oldEndVnode) {
+      oldEndVnode = oldChildren[--oldEndIdx]
+    }
     // 优化向后插入的情况
-    if (isSameVnode(oldStartVnode, newStartVnode)) {
+    if (isSameVnode(oldStartVnode, newStartVnode, 1)) {
       patch(oldStartVnode, newStartVnode)
       oldStartVnode = oldChildren[++oldStartIdx]
       newStartVnode = newChildren[++newStartIdx]
     }
     // 优化向前插入的情况
-    else if (isSameVnode(oldEndVnode, newEndVnode)) {
+    else if (isSameVnode(oldEndVnode, newEndVnode, 2)) {
       patch(oldEndVnode, newEndVnode)
       oldEndVnode = oldChildren[--oldEndIdx]
       newEndVnode = newChildren[--newEndIdx]
     }
     // 头移尾 A B C D 变成   B C D A
-    else if (isSameVnode(oldStartVnode, newEndVnode)) {
+    else if (isSameVnode(oldStartVnode, newEndVnode, 3)) {
       patch(oldStartVnode, newEndVnode)
       parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling)
       oldStartVnode = oldChildren[++oldStartIdx]
       newEndVnode = newChildren[--newEndIdx]
     }
     // 尾移头 A B C D 变成   D A B C
-    else if (isSameVnode(oldEndVnode, newStartVnode)) {
+    else if (isSameVnode(oldEndVnode, newStartVnode, 4)) {
       patch(oldEndVnode, newStartVnode)
       parent.insertBefore(oldEndVnode.el, oldStartVnode.el)
-      oldEndVnode = oldChildren[--oldStartIdx]
-      newStartVnode = newChildren[++newEndIdx]
+      oldEndVnode = oldChildren[--oldEndIdx]
+      newStartVnode = newChildren[++newStartIdx]
+    } else {
+      // A B C 变成 Q A F C N
+      // 暴力比对 乱序
+      // 先根据老节点的key 做一个映射表拿新的虚拟节点去映射表里找。如果可以查到就进行移动操作，找不到直接插入元素即可
+      let moveIndex = map[newStartVnode.key]
+      if (!moveIndex) {
+        parent.insertBefore(createElm(newStartVnode), oldStartVnode.el)
+      } else {
+        let moveVnode = oldChildren[moveIndex]
+        oldChildren[moveIndex] = undefined // 占位防止塌陷
+        parent.insertBefore(moveVnode.el, oldStartVnode.el)
+        patch(moveVnode, newStartVnode)
+      }
+      newStartVnode = newChildren[++newStartIdx]
     }
   }
   if (newStartIdx <= newEndIdx) {
@@ -98,6 +129,15 @@ function updateChildren(parent, oldChildren, newChildren) {
         ? null
         : newChildren[newEndIdx + 1].el
       parent.insertBefore(createElm(newChildren[i]), el)
+    }
+  }
+  if (oldStartIdx <= oldEndIdx) {
+    for (let i = oldStartIdx; i <= oldEndIdx; i++) {
+      // 删除多余的老节点
+      let child = oldChildren[i]
+      if (child) {
+        parent.removeChild(child.el)
+      }
     }
   }
 }

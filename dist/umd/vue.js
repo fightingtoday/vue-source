@@ -684,7 +684,7 @@
       }
     }
   }
-  function isSameVnode(oVnode, nVnode) {
+  function isSameVnode(oVnode, nVnode, index) {
     return oVnode.tag === nVnode.tag && oVnode.key === nVnode.key;
   }
   function updateChildren(parent, oldChildren, newChildren) {
@@ -697,7 +697,23 @@
     var newStartVnode = newChildren[0];
     var newEndIdx = newChildren.length - 1;
     var newEndVnode = newChildren[newEndIdx];
+    var makeIndexByKey = function makeIndexByKey(children) {
+      var map = {};
+      children.forEach(function (child, index) {
+        if (child.key) {
+          map[child.key] = index; // 根据key创建一个映射表
+        }
+      });
+      return map;
+    };
+    var map = makeIndexByKey(oldChildren);
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      if (!oldStartVnode) {
+        oldStartVnode = oldChildren[++oldStartIdx];
+      }
+      if (!oldEndVnode) {
+        oldEndVnode = oldChildren[--oldEndIdx];
+      }
       // 优化向后插入的情况
       if (isSameVnode(oldStartVnode, newStartVnode)) {
         patch(oldStartVnode, newStartVnode);
@@ -721,8 +737,22 @@
       else if (isSameVnode(oldEndVnode, newStartVnode)) {
         patch(oldEndVnode, newStartVnode);
         parent.insertBefore(oldEndVnode.el, oldStartVnode.el);
-        oldEndVnode = oldChildren[--oldStartIdx];
-        newStartVnode = newChildren[++newEndIdx];
+        oldEndVnode = oldChildren[--oldEndIdx];
+        newStartVnode = newChildren[++newStartIdx];
+      } else {
+        // A B C 变成 Q A F C N
+        // 暴力比对 乱序
+        // 先根据老节点的key 做一个映射表拿新的虚拟节点去映射表里找。如果可以查到就进行移动操作，找不到直接插入元素即可
+        var moveIndex = map[newStartVnode.key];
+        if (!moveIndex) {
+          parent.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+        } else {
+          var moveVnode = oldChildren[moveIndex];
+          oldChildren[moveIndex] = undefined; // 占位防止塌陷
+          parent.insertBefore(moveVnode.el, oldStartVnode.el);
+          patch(moveVnode, newStartVnode);
+        }
+        newStartVnode = newChildren[++newStartIdx];
       }
     }
     if (newStartIdx <= newEndIdx) {
@@ -730,6 +760,15 @@
         // 将新增元素直接插入（可能是向后插入或向前插入）
         var el = !newChildren[newEndIdx + 1] ? null : newChildren[newEndIdx + 1].el;
         parent.insertBefore(createElm(newChildren[i]), el);
+      }
+    }
+    if (oldStartIdx <= oldEndIdx) {
+      for (var _i = oldStartIdx; _i <= oldEndIdx; _i++) {
+        // 删除多余的老节点
+        var child = oldChildren[_i];
+        if (child) {
+          parent.removeChild(child.el);
+        }
       }
     }
   }
@@ -994,7 +1033,7 @@
       name: 'test'
     }
   });
-  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" >\n  <div style=\"background:red\" key=\"A\">A</div>\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n  <div style=\"background:green\" key=\"D\">D</div>\n  </div>");
+  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" >\n  <div style=\"background:red\" key=\"A\">A\u7684\u5185\u5BB9</div>\n  <div style=\"background:yellow\" key=\"B\">B\u7684\u5185\u5BB9</div>\n  <div style=\"background:blue\" key=\"C\">C\u7684\u5185\u5BB9</div>\n  </div>");
   var vnode = render1.call(vm1);
   var el = createElm(vnode);
   document.body.appendChild(el);
@@ -1003,7 +1042,7 @@
       test: 'zzzzzz'
     }
   });
-  var render2 = compileToRender("<div class=\"vm2 pClass\" >\n    <div style=\"background:green\" key=\"D\">D</div>\n\n       <div style=\"background:red\" key=\"A\">A</div>\n\n  <div style=\"background:yellow\" key=\"B\">B</div>\n  <div style=\"background:blue\" key=\"C\">C</div>\n\n\n  </div>");
+  var render2 = compileToRender("<div class=\"vm2 pClass\" >\n    <div style=\"background:green\" key=\"Q\">Q\u7684\u5185\u5BB9</div>\n       <div style=\"background:red\" key=\"A\">A\u7684\u5185\u5BB9</div>\n       <div style=\"background:gray\" key=\"F\">F\u7684\u5185\u5BB9</div>\n  <div style=\"background:yellow\" key=\"C\">C\u7684\u5185\u5BB9</div>\n  <div style=\"background:blue\" key=\"N\">N\u7684\u5185\u5BB9</div>\n\n\n  </div>");
   var newvnode = render2.call(vm2);
   setTimeout(function () {
     patch(vnode, newvnode);

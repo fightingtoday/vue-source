@@ -19,10 +19,9 @@ const vm1 = new Vue({
 })
 let render1 = compileToRender(
   `<div class="vm1" id="app" >
-  <div style="background:red" key="A">A</div>
-  <div style="background:yellow" key="B">B</div>
-  <div style="background:blue" key="C">C</div>
-  <div style="background:green" key="D">D</div>
+  <div style="background:red" key="A">A的内容</div>
+  <div style="background:yellow" key="B">B的内容</div>
+  <div style="background:blue" key="C">C的内容</div>
   </div>`
 )
 let vnode = render1.call(vm1)
@@ -34,12 +33,11 @@ const vm2 = new Vue({
 })
 let render2 = compileToRender(
   `<div class="vm2 pClass" >
-    <div style="background:green" key="D">D</div>
-
-       <div style="background:red" key="A">A</div>
-
-  <div style="background:yellow" key="B">B</div>
-  <div style="background:blue" key="C">C</div>
+    <div style="background:green" key="Q">Q的内容</div>
+       <div style="background:red" key="A">A的内容</div>
+       <div style="background:gray" key="F">F的内容</div>
+  <div style="background:yellow" key="C">C的内容</div>
+  <div style="background:blue" key="N">N的内容</div>
 
 
   </div>`
