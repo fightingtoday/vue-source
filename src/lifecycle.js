@@ -5,7 +5,13 @@ export function lifecycleMixin(Vue) {
   Vue.prototype._update = function (vnode) {
     // 通过虚拟节点创建真实dom
     const vm = this
-    vm.$el = patch(vm.$el, vnode)
+    const preVnode = vm._vnode
+    vm._vnode = vnode
+    if (!preVnode) {
+      vm.$el = patch(vm.$el, vnode) // 第一次渲染
+    } else {
+      vm.$el = patch(preVnode, vnode) // 更新
+    }
     // console.log('vnode', vnode)
   }
 }

@@ -12,38 +12,4 @@ initMixin(Vue)
 renderMixin(Vue)
 lifecycleMixin(Vue)
 initGlobalAPI(Vue)
-
-// demo 产生两个虚拟节点进行比对
-const vm1 = new Vue({
-  data: { name: 'test' },
-})
-let render1 = compileToRender(
-  `<div class="vm1" id="app" >
-  <div style="background:red" key="A">A的内容</div>
-  <div style="background:yellow" key="B">B的内容</div>
-  <div style="background:blue" key="C">C的内容</div>
-  </div>`
-)
-let vnode = render1.call(vm1)
-let el = createElm(vnode)
-document.body.appendChild(el)
-
-const vm2 = new Vue({
-  data: { test: 'zzzzzz' },
-})
-let render2 = compileToRender(
-  `<div class="vm2 pClass" >
-    <div style="background:green" key="Q">Q的内容</div>
-       <div style="background:red" key="A">A的内容</div>
-       <div style="background:gray" key="F">F的内容</div>
-  <div style="background:yellow" key="C">C的内容</div>
-  <div style="background:blue" key="N">N的内容</div>
-
-
-  </div>`
-)
-let newvnode = render2.call(vm2)
-setTimeout(() => {
-  patch(vnode, newvnode)
-}, 1000)
 export default Vue

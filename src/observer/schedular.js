@@ -10,7 +10,7 @@ function flush() {
 }
 export function queueWatcher(watcher) {
   let id = watcher.id
-  if (has[id] === null) {
+  if (!has[id]) {
     queue.push(watcher)
     has[id] = true
   }

@@ -582,7 +582,7 @@
   }
   function queueWatcher(watcher) {
     var id = watcher.id;
-    if (has[id] === null) {
+    if (!has[id]) {
       queue.push(watcher);
       has[id] = true;
     }
@@ -840,7 +840,13 @@
     Vue.prototype._update = function (vnode) {
       // 通过虚拟节点创建真实dom
       var vm = this;
-      vm.$el = patch(vm.$el, vnode);
+      var preVnode = vm._vnode;
+      vm._vnode = vnode;
+      if (!preVnode) {
+        vm.$el = patch(vm.$el, vnode); // 第一次渲染
+      } else {
+        vm.$el = patch(preVnode, vnode); // 更新
+      }
       // console.log('vnode', vnode)
     };
   }
@@ -908,7 +914,7 @@
     }
     if (isReservedTag(tag)) {
       // 原始标签的处理 div span ...
-      return vnode$1(tag, data, key, children, undefined);
+      return vnode(tag, data, key, children, undefined);
     } else {
       // 组件的处理
       var Ctor = vm.$options.components[tag];
@@ -930,15 +936,15 @@
         child.$mount();
       }
     };
-    return vnode$1("vue-component".concat(Ctor.cid, "-").concat(tag), data, key, undefined, undefined, {
+    return vnode("vue-component".concat(Ctor.cid, "-").concat(tag), data, key, undefined, undefined, {
       Ctor: Ctor,
       children: children
     });
   }
   function createTextVNode(text) {
-    return vnode$1(undefined, undefined, undefined, undefined, text);
+    return vnode(undefined, undefined, undefined, undefined, text);
   }
-  function vnode$1(tag, data, key, children, text, componentOptions) {
+  function vnode(tag, data, key, children, text, componentOptions) {
     return {
       tag: tag,
       data: data,
@@ -1026,27 +1032,6 @@
   renderMixin(Vue);
   lifecycleMixin(Vue);
   initGlobalAPI(Vue);
-
-  // demo 产生两个虚拟节点进行比对
-  var vm1 = new Vue({
-    data: {
-      name: 'test'
-    }
-  });
-  var render1 = compileToRender("<div class=\"vm1\" id=\"app\" >\n  <div style=\"background:red\" key=\"A\">A\u7684\u5185\u5BB9</div>\n  <div style=\"background:yellow\" key=\"B\">B\u7684\u5185\u5BB9</div>\n  <div style=\"background:blue\" key=\"C\">C\u7684\u5185\u5BB9</div>\n  </div>");
-  var vnode = render1.call(vm1);
-  var el = createElm(vnode);
-  document.body.appendChild(el);
-  var vm2 = new Vue({
-    data: {
-      test: 'zzzzzz'
-    }
-  });
-  var render2 = compileToRender("<div class=\"vm2 pClass\" >\n    <div style=\"background:green\" key=\"Q\">Q\u7684\u5185\u5BB9</div>\n       <div style=\"background:red\" key=\"A\">A\u7684\u5185\u5BB9</div>\n       <div style=\"background:gray\" key=\"F\">F\u7684\u5185\u5BB9</div>\n  <div style=\"background:yellow\" key=\"C\">C\u7684\u5185\u5BB9</div>\n  <div style=\"background:blue\" key=\"N\">N\u7684\u5185\u5BB9</div>\n\n\n  </div>");
-  var newvnode = render2.call(vm2);
-  setTimeout(function () {
-    patch(vnode, newvnode);
-  }, 1000);
 
   return Vue;
 
